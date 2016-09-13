@@ -925,7 +925,7 @@ procedure lame_mp3_tags_fid(gfp: Plame_global_flags; fid: pointer); cdecl; exter
  * data in your mp3 file. If you put some other leading data into your
  * file, you'll have to do some bookkeeping about where to write this buffer.
  *)
-function lame_get_lametag_frame(const gfp: Plame_global_flags; buffer: pcuchar; size: size_t): size_t; cdecl; external LIB_LAME;
+function lame_get_lametag_frame(const gfp: Plame_global_flags; buffer: pcuchar; size: csize_t): csize_t; cdecl; external LIB_LAME;
 
 (*
  * REQUIRED:
@@ -1011,7 +1011,7 @@ procedure hip_set_msgf  (gfp: hip_t; f: lame_report_function); cdecl; external L
  *********************************************************************)
 function hip_decode(gfp: hip_t;
                     mp3buf: pcuchar;
-                    len: size_t;
+                    len: csize_t;
                     pcm_l: pcshort;
                     pcm_r: pcshort
                    ): cint; cdecl; external LIB_LAME;
@@ -1019,7 +1019,7 @@ function hip_decode(gfp: hip_t;
 (* same as hip_decode, and also returns mp3 header data *)
 function hip_decode_headers(gfp: hip_t;
                             mp3buf: pcuchar;
-                            len: size_t;
+                            len: csize_t;
                             pcm_l: pcshort;
                             pcm_r: pcshort;
                             mp3data: Pmp3data_struct
@@ -1028,7 +1028,7 @@ function hip_decode_headers(gfp: hip_t;
 (* same as hip_decode, but returns at most one frame *)
 function hip_decode1(gfp: hip_t;
                      mp3buf: pcuchar;
-                     len: size_t;
+                     len: csize_t;
                      pcm_l: pcshort;
                      pcm_r: pcshort
                     ): cint; cdecl; external LIB_LAME;
@@ -1036,7 +1036,7 @@ function hip_decode1(gfp: hip_t;
 (* same as hip_decode1, but returns at most one frame and mp3 header data *)
 function hip_decode1_headers(gfp: hip_t;
                              mp3buf: pcuchar;
-                             len: size_t;
+                             len: csize_t;
 							 pcm_l: pcshort;
                              pcm_r: pcshort;
                              mp3data: Pmp3data_struct
@@ -1046,7 +1046,7 @@ function hip_decode1_headers(gfp: hip_t;
    from VBR Info tag, (-1 if no info tag was found) *)
 function hip_decode1_headersB(gfp: hip_t;
                               mp3buf: pcuchar;
-                              len: size_t;
+                              len: csize_t;
                               pcm_l: pcshort;
                               pcm_r: pcshort;
                               mp3data: Pmp3data_struct;
@@ -1148,7 +1148,7 @@ procedure id3tag_space_v1(gfp: lame_t); cdecl; external LIB_LAME;
 procedure id3tag_pad_v2(gfp: lame_t); cdecl; external LIB_LAME;
 
 (* pad version 2 tag with extra n bytes *)
-procedure id3tag_set_pad(gfp: lame_t; n: size_t); cdecl; external LIB_LAME;
+procedure id3tag_set_pad(gfp: lame_t; n: csize_t); cdecl; external LIB_LAME;
 
 procedure id3tag_set_title(gfp: lame_t; const title: pcchar); cdecl; external LIB_LAME;
 procedure id3tag_set_artist(gfp: lame_t; const artist: pcchar); cdecl; external LIB_LAME;
@@ -1171,7 +1171,7 @@ function id3tag_set_genre(gfp: lame_t; const genre: pcchar): cint; cdecl; extern
 function id3tag_set_fieldvalue(gfp: lame_t; const fieldvalue: pcchar): cint; cdecl; external LIB_LAME;
 
 (* return non-zero result if image type is invalid *)
-function id3tag_set_albumart(gfp: lame_t; const image: pcchar; size: size_t): cint; cdecl; external LIB_LAME;
+function id3tag_set_albumart(gfp: lame_t; const image: pcchar; size: csize_t): cint; cdecl; external LIB_LAME;
 
 (* lame_get_id3v1_tag copies ID3v1 tag into buffer.
  * Function returns number of bytes copied into buffer, or number
@@ -1180,7 +1180,7 @@ function id3tag_set_albumart(gfp: lame_t; const image: pcchar; size: size_t): ci
  * NOTE:
  * This functions does nothing, if user/LAME disabled ID3v1 tag.
  *)
-function lame_get_id3v1_tag(gfp: lame_t; buffer: pcuchar; size: size_t): size_t; cdecl; external LIB_LAME;
+function lame_get_id3v1_tag(gfp: lame_t; buffer: pcuchar; size: csize_t): csize_t; cdecl; external LIB_LAME;
 
 (* lame_get_id3v2_tag copies ID3v2 tag into buffer.
  * Function returns number of bytes copied into buffer, or number
@@ -1189,7 +1189,7 @@ function lame_get_id3v1_tag(gfp: lame_t; buffer: pcuchar; size: size_t): size_t;
  * NOTE:
  * This functions does nothing, if user/LAME disabled ID3v2 tag.
  *)
-function lame_get_id3v2_tag(gfp: lame_t; buffer: pcuchar; size: size_t): size_t; cdecl; external LIB_LAME;
+function lame_get_id3v2_tag(gfp: lame_t; buffer: pcuchar; size: csize_t): csize_t; cdecl; external LIB_LAME;
 
 (* normaly lame_init_param writes ID3v2 tags into the audio stream
  * Call lame_set_write_id3tag_automatic(gfp, 0) before lame_init_param
