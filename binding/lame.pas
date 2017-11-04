@@ -25,7 +25,7 @@
  * Boston, MA 02111-1307, USA.
  *)
 
-(* $Id: lame.h,v 1.189.2.1 2012/01/08 23:49:58 robert Exp $ *)
+(* $Id: lame.h,v 1.192 2017/08/31 14:14:46 robert Exp $ *)
 
 unit lame;
 
@@ -54,7 +54,7 @@ type
 type
   vbr_mode = (
     vbr_off = 0,
-    vbr_mt,           (* obsolete, same as vbr_mtrh *)
+    vbr_mt, (* obsolete, same as vbr_mtrh *)
     vbr_rh,
     vbr_abr,
     vbr_mtrh,
@@ -614,6 +614,10 @@ function lame_get_noclipGainChange(const gfp: Plame_global_flags): cint; cdecl; 
    not clip or the value cannot be determined *)
 function lame_get_noclipScale(const gfp: Plame_global_flags): cfloat; cdecl; external LIB_LAME;
 
+(* returns the limit of PCM samples, which one can pass in an encode call
+   under the constrain of a provided buffer of size buffer_size *)
+function lame_get_maximum_number_of_samples(gfp: lame_t; buffer_size: csize_t): cint; cdecl; external LIB_LAME;
+
 (*
  * REQUIRED:
  * sets more internal configuration based on data provided above.
@@ -643,17 +647,17 @@ type
     (* generic LAME version *)
     major: cint;
     minor: cint;
-    alpha: cint;               (* 0 if not an alpha version *)
-    beta: cint;                (* 0 if not a beta version *)
+    alpha: cint; (* 0 if not an alpha version *)
+    beta: cint; (* 0 if not a beta version *)
 
     (* version of the psy model *)
     psy_major: cint;
     psy_minor: cint;
-    psy_alpha: cint;           (* 0 if not an alpha version *)
-    psy_beta: cint;            (* 0 if not a beta version *)
+    psy_alpha: cint; (* 0 if not an alpha version *)
+    psy_beta: cint; (* 0 if not a beta version *)
 
     (* compile time features *)
-    features: pcchar;    (* Don't make assumptions about the contents! *)
+    features: pcchar; (* Don't make assumptions about the contents! *)
   end;
 
 procedure get_lame_version_numerical(version_t: Plame_version_t); cdecl; external LIB_LAME;
@@ -698,13 +702,14 @@ procedure lame_print_internals(const gfp: Plame_global_flags); cdecl; external L
  * This will overwrite the data in buffer_l[] and buffer_r[].
  *
 *)
-function lame_encode_buffer (
+function lame_encode_buffer(
         gfp: Plame_global_flags; (* global context handle *)
-        const buffer_l: pcsint;  (* PCM data for left channel *)
-        const buffer_r: pcsint;  (* PCM data for right channel *)
-        const nsamples: cint;    (* number of samples per channel *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        const mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        const buffer_l: array of csint; (* PCM data for left channel *)
+        const buffer_r: array of csint; (* PCM data for right channel *)
+        const nsamples: cint; (* number of samples per channel *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (*
  * as above, but input has L & R channel data interleaved.
@@ -714,10 +719,27 @@ function lame_encode_buffer (
  *)
 function lame_encode_buffer_interleaved(
         gfp: Plame_global_flags; (* global context handlei *)
-        pcm: pcsint;             (* PCM data for left and right channel, interleaved *)
-        num_samples: cint;       (* number of samples per channel, _not_ number of samples in pcm[] *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        pcm: array of csint; (* PCM data for left and right channel, interleaved *)
+        num_samples: cint; (* number of samples per channel, _not_ number of samples in pcm[] *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
+
+(*
+ * as above, but for interleaved data.
+ * !! NOTE: !! data must still be scaled to be in the same range as
+ * type 'int32_t'.   Data should be in the range:  +/- 2^(8*size(int32_t)-1)
+ * NOTE:
+ * num_samples = number of samples in the L (or R)
+ * channel, not the total number of samples in pcm[]
+ *)
+function lame_encode_buffer_interleaved_int(
+        gfp: lame_t;
+        const pcm: array of cint; (* PCM data for left and right channel, interleaved *)
+        const nsamples: cint; (* number of samples per channel, _not_ number of samples in pcm[] *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (* as lame_encode_buffer, but for 'float's.
  * !! NOTE: !! data must still be scaled to be in the same range as
@@ -725,26 +747,27 @@ function lame_encode_buffer_interleaved(
  *)
 function lame_encode_buffer_float(
         gfp: Plame_global_flags; (* global context handle *)
-        const pcm_l: pcfloat;    (* PCM data for left channel *)
-        const pcm_r: pcfloat;    (* PCM data for right channel *)
-        const nsamples: cint;    (* number of samples per channel *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        const mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        const pcm_l: array of cfloat; (* PCM data for left channel *)
+        const pcm_r: array of cfloat; (* PCM data for right channel *)
+        const nsamples: cint; (* number of samples per channel *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (* as lame_encode_buffer, but for 'float's.
  * !! NOTE: !! data must be scaled to +/- 1 full scale
  *)
 function lame_encode_buffer_ieee_float(
         gfp: lame_t;
-        const pcm_l: pcfloat;          (* PCM data for left channel *)
-        const pcm_r: pcfloat;          (* PCM data for right channel *)
+        const pcm_l: array of cfloat; (* PCM data for left channel *)
+        const pcm_r: array of cfloat; (* PCM data for right channel *)
         const nsamples: cint;
         mp3buf: pcuchar;
         const mp3buf_size: cint): cint; cdecl; external LIB_LAME;
 
 function lame_encode_buffer_interleaved_ieee_float(
         gfp: lame_t;
-        const pcm: pcfloat; (* PCM data for left and right channel, interleaved *)
+        const pcm: array of cfloat; (* PCM data for left and right channel, interleaved *)
         const nsamples: cint;
         mp3buf: pcuchar;
         const mp3buf_size: cint): cint; cdecl; external LIB_LAME;
@@ -754,15 +777,15 @@ function lame_encode_buffer_interleaved_ieee_float(
  *)
 function lame_encode_buffer_ieee_double(
         gfp: lame_t;
-        const pcm_l: pcdouble;          (* PCM data for left channel *)
-        const pcm_r: pcdouble;          (* PCM data for right channel *)
+        const pcm_l: array of cdouble; (* PCM data for left channel *)
+        const pcm_r: array of cdouble; (* PCM data for right channel *)
         const nsamples: cint;
         mp3buf: pcuchar;
         const mp3buf_size: cint): cint; cdecl; external LIB_LAME;
 
 function lame_encode_buffer_interleaved_ieee_double(
         gfp: lame_t;
-        const pcm: pcdouble;             (* PCM data for left and right channel, interleaved *)
+        const pcm: array of cdouble; (* PCM data for left and right channel, interleaved *)
         const nsamples: cint;
         mp3buf: pcuchar;
         const mp3buf_size: cint): cint; cdecl; external LIB_LAME;
@@ -777,11 +800,12 @@ function lame_encode_buffer_interleaved_ieee_double(
  *)
 function lame_encode_buffer_long(
         gfp: Plame_global_flags; (* global context handle *)
-        const buffer_l: pclong;  (* PCM data for left channel *)
-        const buffer_r: pclong;  (* PCM data for right channel *)
-        const nsamples: cint;    (* number of samples per channel *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        const mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        const buffer_l: array of clong; (* PCM data for left channel *)
+        const buffer_r: array of clong; (* PCM data for right channel *)
+        const nsamples: cint; (* number of samples per channel *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint
+      ): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
 
 (* Same as lame_encode_buffer_long(), but with correct scaling.
  * !! NOTE: !! data must still be scaled to be in the same range as
@@ -790,11 +814,12 @@ function lame_encode_buffer_long(
  *)
 function lame_encode_buffer_long2(
         gfp: Plame_global_flags; (* global context handle *)
-        const buffer_l: pclong;  (* PCM data for left channel *)
-        const buffer_r: pclong;  (* PCM data for right channel *)
-        const nsamples: cint;    (* number of samples per channel *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        const mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        const buffer_l: array of clong; (* PCM data for left channel *)
+        const buffer_r: array of clong; (* PCM data for right channel *)
+        const nsamples: cint; (* number of samples per channel *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (* as lame_encode_buffer, but for int's
  * !! NOTE: !! input should be scaled to the maximum range of 'int'
@@ -807,11 +832,12 @@ function lame_encode_buffer_long2(
  *)
 function lame_encode_buffer_int(
         gfp: Plame_global_flags; (* global context handle *)
-        const buffer_l: pcint;   (* PCM data for left channel *)
-        const buffer_r: pcint;   (* PCM data for right channel *)
-        const nsamples: cint;    (* number of samples per channel *)
-        mp3buf: pcuchar;         (* pointer to encoded MP3 stream *)
-        const mp3buf_size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        const buffer_l: array of cint; (* PCM data for left channel *)
+        const buffer_r: array of cint; (* PCM data for right channel *)
+        const nsamples: cint; (* number of samples per channel *)
+        mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
+        const mp3buf_size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (*
  * REQUIRED:
@@ -848,9 +874,10 @@ function lame_encode_flush(
  * return code = number of bytes output to mp3buf. Can be 0
  *)
 function lame_encode_flush_nogap(
-        gfp: Plame_global_flags;    (* global context handle *)
+        gfp: Plame_global_flags; (* global context handle *)
         mp3buf: pcuchar; (* pointer to encoded MP3 stream *)
-        size: cint): cint; cdecl; external LIB_LAME; (* number of valid octets in this stream *)
+        size: cint (* number of valid octets in this stream *)
+      ): cint; cdecl; external LIB_LAME;
 
 (*
  * OPTIONAL:
@@ -860,7 +887,8 @@ function lame_encode_flush_nogap(
  * lame_encode_flush_nogap().
  *)
 function lame_init_bitstream(
-        gfp: Plame_global_flags): cint; cdecl; external LIB_LAME; (* global context handle *)
+        gfp: Plame_global_flags (* global context handle *)
+      ): cint; cdecl; external LIB_LAME;
 
 (*
  * OPTIONAL:    some simple statistics
@@ -965,20 +993,20 @@ type
 
   Pmp3data_struct = ^mp3data_struct;
   mp3data_struct = record
-    header_parsed: cint;   (* 1 if header was parsed and following data was computed *)
-    stereo: cint;          (* number of channels *)
-    samplerate: cint;      (* sample rate *)
-    bitrate: cint;         (* bitrate *)
-    mode: cint;            (* mp3 frame type *)
-    mode_ext: cint;        (* mp3 frame type *)
-    framesize: cint;       (* number of samples per mp3 frame *)
+    header_parsed: cint; (* 1 if header was parsed and following data was computed *)
+    stereo: cint; (* number of channels *)
+    samplerate: cint; (* sample rate *)
+    bitrate: cint; (* bitrate *)
+    mode: cint; (* mp3 frame type *)
+    mode_ext: cint; (* mp3 frame type *)
+    framesize: cint; (* number of samples per mp3 frame *)
   
     (* this data is only computed if mpglib detects a Xing VBR header *)
     nsamp: culong; (* number of samples in mp3 file. *)
-    totalframes: cint;     (* total number of frames in mp3 file *)
+    totalframes: cint; (* total number of frames in mp3 file *)
   
     (* this data is not currently computed by the mpglib routines *)
-    framenum: cint;        (* frames decoded counter *)
+    framenum: cint; (* frames decoded counter *)
   end;
 
 (* required call to initialize decoder *)
@@ -1012,16 +1040,16 @@ procedure hip_set_msgf  (gfp: hip_t; f: lame_report_function); cdecl; external L
 function hip_decode(gfp: hip_t;
                     mp3buf: pcuchar;
                     len: csize_t;
-                    pcm_l: pcshort;
-                    pcm_r: pcshort
+                    pcm_l: array of cshort;
+                    pcm_r: array of cshort
                    ): cint; cdecl; external LIB_LAME;
 
 (* same as hip_decode, and also returns mp3 header data *)
 function hip_decode_headers(gfp: hip_t;
                             mp3buf: pcuchar;
                             len: csize_t;
-                            pcm_l: pcshort;
-                            pcm_r: pcshort;
+                            pcm_l: array of cshort;
+                            pcm_r: array of cshort;
                             mp3data: Pmp3data_struct
                            ): cint; cdecl; external LIB_LAME;
 
@@ -1029,16 +1057,16 @@ function hip_decode_headers(gfp: hip_t;
 function hip_decode1(gfp: hip_t;
                      mp3buf: pcuchar;
                      len: csize_t;
-                     pcm_l: pcshort;
-                     pcm_r: pcshort
+                     pcm_l: array of cshort;
+                     pcm_r: array of cshort
                     ): cint; cdecl; external LIB_LAME;
 
 (* same as hip_decode1, but returns at most one frame and mp3 header data *)
 function hip_decode1_headers(gfp: hip_t;
                              mp3buf: pcuchar;
                              len: csize_t;
-							 pcm_l: pcshort;
-                             pcm_r: pcshort;
+                             pcm_l: array of cshort;
+                             pcm_r: array of cshort;
                              mp3data: Pmp3data_struct
                             ): cint; cdecl; external LIB_LAME;
 
@@ -1047,8 +1075,8 @@ function hip_decode1_headers(gfp: hip_t;
 function hip_decode1_headersB(gfp: hip_t;
                               mp3buf: pcuchar;
                               len: csize_t;
-                              pcm_l: pcshort;
-                              pcm_r: pcshort;
+                              pcm_l: array of cshort;
+                              pcm_r: array of cshort;
                               mp3data: Pmp3data_struct;
                               enc_delay: pcint;
                               enc_padding: pcint
@@ -1065,30 +1093,30 @@ function lame_decode_init(): cint; cdecl; external LIB_LAME;
 function lame_decode(
         mp3buf: pcuchar;
         len: cint;
-        pcm_l: pcshort;
-        pcm_r: pcshort): cint; cdecl; external LIB_LAME;
+        pcm_l: array of cshort;
+        pcm_r: array of cshort): cint; cdecl; external LIB_LAME;
 function lame_decode_headers(
         mp3buf: pcuchar;
         len: cint;
-        pcm_l: pcshort;
-        pcm_r: pcshort;
+        pcm_l: array of cshort;
+        pcm_r: array of cshort;
         mp3data: Pmp3data_struct): cint; cdecl; external LIB_LAME;
 function lame_decode1(
         mp3buf: pcuchar;
         len: cint;
-        pcm_l: pcshort;
-        pcm_r: pcshort): cint; cdecl; external LIB_LAME;
+        pcm_l: array of cshort;
+        pcm_r: array of cshort): cint; cdecl; external LIB_LAME;
 function lame_decode1_headers(
         mp3buf: pcuchar;
         len: cint;
-        pcm_r: pcshort;
-        pcm_l: pcshort;
+        pcm_l: array of cshort;
+        pcm_r: array of cshort;
         mp3data: Pmp3data_struct): cint; cdecl; external LIB_LAME;
 function lame_decode1_headersB(
         mp3buf: pcuchar;
         len: cint;
-        pcm_l: pcshort;
-        pcm_r: pcshort;
+        pcm_l: array of cshort;
+        pcm_r: array of cshort;
         mp3data: Pmp3data_struct;
         enc_delay: pcint;
         enc_padding: pcint): cint; cdecl; external LIB_LAME;
@@ -1234,8 +1262,9 @@ function id3tag_set_comment_utf16(gfp: lame_t; lang: pcchar; const desc: pcushor
 *               2: MPEG-2.5 values  (sample frequencies  8...12 kHz)
 ***********************************************************************)
 
-function bitrate_table(): pcint; cdecl; external LIB_LAME;
-function samplerate_table(): pcint; cdecl; external LIB_LAME;
+var
+  bitrate_table: array[0..2, 0..15] of cint; external LIB_LAME;
+  samplerate_table: array[0..2, 0..3] of cint; external LIB_LAME;
 
 (* access functions for use in DLL, global vars are not exported *)
 function lame_get_bitrate(mpeg_version: cint; table_index: cint): cint; cdecl; external LIB_LAME;
